@@ -29,12 +29,6 @@ jobs:
       - name: dotnet publish
         run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp
 
-      - name: install dotnet ef
-        run: dotnet tool install -g dotnet-ef --version 8.*
-      
-      - name: Create Migration Bundle
-        run: dotnet ef migrations bundle --runtime linux-x64 -o ${{env.DOTNET_ROOT}}/myapp/migrationsbundle
-
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
@@ -45,12 +39,23 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     
+    permissions:
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
+
     steps:
       - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
           name: .net-app
       
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_3312DE04440B40C484F7F424614E6FD3 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_695E9D19260C481CA51A772784A3453C }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_14B1E30DB4924D30B961C394AC29A45B }}
+
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
@@ -58,4 +63,4 @@ jobs:
           app-name: 'sample-app-health-model'
           slot-name: 'Production'
           package: .
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_1AD1444FF1D3483B864FFA672BFEC6C9 }}
+          
